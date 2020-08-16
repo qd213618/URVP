@@ -78,15 +78,21 @@ python test.py params.py
 ```
 ##### Results
 * Test in 2080Ti GPU with different input size and batch size.   
+CPU Results
+|    Methods   | Mean error | CPU Running Time (s) |
+|:------------:|:----------:|:--------------------:|
+| Kong (Gabor) |  0.040639  |        20.1021       |
+|  Kong (gLoG) |  0.051556  |        21.213        |
+|   Moghadam   |  0.063407  |        0.2423        |
+|     Yang     |  0.045931  |         0.752        |
+|   Proposed   |  0.034875  |        0.2024        |
 
-| Imp.	| Backbone | Input Size | Batch Size | Inference Time | FPS |
-| ----- |:--------:|:----------:|:----------:|:--------------:|:---:|
-| Paper | Darknet53| 320        | 1          | 22ms           | 45  |
-| Paper | Darknet53| 416        | 1          | 29ms           | 34  |
-| Paper | Darknet53| 608        | 1          | 51ms           | 19  |
-| Our   | Darknet53| 416        | 1          | 28ms           | 36  |
-| Our   | Darknet53| 416        | 8          | 17ms           | 58  |
-
+GPU Results
+|  Backbones | Number of images with NormDist error <= 0.01  | Number of images with NormDist error > 0.1 | GPU-speed | CPU-speed |
+|:----------:|:---------------------------------------------:|:------------------------------------------:|:---------:|:---------:|
+|     Hg4    |                      192                      |                     113                    | 23.04 fps |  2.02 fps |
+|  HRNet-48  |                      205                      |                     115                    | 29.15 fps |  2.90 fps |
+| HRNet-48-M |                      207                      |                     106                    | 33.05 fps |  4.94 fps |
 ## Credit
 ```
 @article{liu2020unstructured,
