@@ -42,8 +42,6 @@ python training.py params.py
 #  please install tensorboard in first
 python -m tensorboard.main --logdir=YOUR_WORKING_DIR   
 ```
-<p><img src="common/demo/loss_curve.png"\></p>
-
 
 ## Evaluate
 ##### Download pretrained weights
@@ -64,9 +62,7 @@ Please download pretrained weights ```URVP.pth``` or use yourself checkpoint.
 cd test
 python test_images.py params.py
 ```
-You can got result images in output folder.   
-<p align="center"><img src="common/demo/demo0.jpg"\></p>
-<p align="center"><img src="common/demo/demo1.jpg"\></p>
+You can got result images in output folder.  
 
 ## Measure FPS
 ##### pretrained weights
