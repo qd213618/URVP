@@ -4,7 +4,7 @@ Full implementation of URVP in PyTorch.
 ## Overview
 #### Unstructured road vanishing point (VP) detection is a challenging problem, especially in the field of autonomous driving. In this paper, we proposed a novel solution combining the convolutional neural network (CNN) and heatmap regression to detect unstructured road VP. The proposed algorithm first adopted a lightweight backbone, i.e., depthwise convolution modified HRNet, to extract hierarchical features of the unstructured road image. Then, three advanced strategies, i.e., multi-scale supervised learning, heatmap super-resolution, and coordinate regression techniques were utilized to carry out fast and high-precision unstructured road VP detection. The empirical results on Kong's dataset showed that our proposed approach had the highest detection accuracy in real-time compared with the state-of-the-art methods under various conditions, and achieved the highest speed of 33 fps.
 
-
+![image](https://github.com/qd213618/URVP/blob/master/img/heatmap.jpg)
 
 ## Installation
 ##### Environment
