@@ -79,6 +79,7 @@ python test.py params.py
 ##### Results
 * Test in 2080Ti GPU with different input size and batch size.   
 CPU Results
+
 |    Methods   | Mean error | CPU Running Time (s) |
 |:------------:|:----------:|:--------------------:|
 | Kong (Gabor) |  0.040639  |        20.1021       |
