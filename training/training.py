@@ -19,14 +19,11 @@ from tensorboardX import SummaryWriter
 
 MY_DIRNAME = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(MY_DIRNAME, '..'))
-# sys.path.insert(0, os.path.join(MY_DIRNAME, '..', 'evaluate'))
-# from nets.backbone import backbone_fn
 from nets.model_main import ModelMain_PL
 from nets.yolo_loss import YOLOLoss_hrnet
-# from common.coco_dataset_yolo import COCODataset
 from common.coco_dataset_bp_yolo import COCODataset
 from common.evaluation import accuracy, AverageMeter, final_preds
-# from nets.backbone.sync_batchnorm.replicate import DataParallelWithCallback, patch_replication_callback
+
 
 class Trainer():
     def __init__(self):
@@ -42,7 +39,6 @@ class Trainer():
             sys.exit()
         self.config = importlib.import_module(params_path[:-3]).TRAINING_PARAMS
         self.config["global_step"] = self.config.get("start_step", 0)
-        # is_training = False if self.config.get("export_onnx") else True
         self.config["batch_size"] *= len(self.config["parallels"])
         os.environ["CUDA_VISIBLE_DEVICES"] = ','.join(map(str, self.config["parallels"]))
         # DataLoader
@@ -56,8 +52,6 @@ class Trainer():
                                                              is_training=False),
                                                  batch_size=50,
                                                  shuffle=True, num_workers=4, pin_memory=True, drop_last=False)
-        # self.prefetcher = data_prefetcher(self.dataloader)
-        # self.images, self.labels = self.prefetcher.next()
 
     def train(self, config):
         c1max=0
@@ -70,21 +64,12 @@ class Trainer():
         is_training = False if config.get("export_onnx") else True
         net = ModelMain_PL(config, is_training=is_training)
         net.train(is_training)
-        # print(net.shape())
         optimizer = self._get_optimizer(config, net)
         # Set data parallel
         net = nn.DataParallel(net)
-        # if config["yolo"]["batchnorm"]=="SYBN":
-        #     patch_replication_callback(net)
         net = net.cuda()
         loss = nn.MSELoss()
         loss_coor = YOLOLoss_hrnet(config["yolo"]["anchors"][0], config["lambda_xy"], (config["img_w"], config["img_h"]))
-        # idx = [1]
-        # yolo_losses = []
-        # for i in range(3):
-        #     yolo_losses.append(YOLOLoss_line_pp(config["yolo"]["anchors"][i],
-        #                                 config["yolo"]["classes"], config["yolo"]["line_num"], config["lambda_xy"], (config["img_w"], config["img_h"])))
-
         # Restore pretrain model
         if config["pretrain_snapshot"]:
             logging.info("Load pretrained weights from {}".format(config["pretrain_snapshot"]))
@@ -92,52 +77,14 @@ class Trainer():
             net.load_state_dict(state_dict)
         # Start the training loop
         logging.info("Start training.")
-        # if config["train_path"]=="/home/lyb/datasets/vp/finalpoint_line.txt":
-        #     loss_epoch_min = (loss_min+0.1)*5
-        # else:
-        #     loss_epoch_min = (loss_min+0.1)*30
-        # loss_epoch_min = (loss_min+0.1)*31 #int(4352 / (20*config["batch_size"]))
-        # loss_epoch = loss_epoch_min+1
-        # print("avg_min:",loss_epoch_min,self.dataloader.__len__())
 
         for epoch in range(config["epochs"]):
-            # acces = AverageMeter()
-            # lr = 1e-3 #for hg 75epoch/down
-            # ##################################
             if epoch > epoch_th + 10 and epoch > 10:
-            # if epoch > epoch_th + 10:
                 lr = lr/10.0
                 epoch_th = epoch + 1
-            #  ##########################################
-            # if epoch > 10:
-            #     lr = 0.0001
-                # without rote
-                # for sharp_peleenet with pretrain >15 down to 0.001 with 60 epochs
-                # for mobilev2 without pretrain >25 down to 0.001 with 70 epochs
-                # for mobilev3 without pretrain >25 down to 0.001 with 70 epochs
-                # with rote
-                # for mobilev2,v3,pelee with pretrain >10 down to 0.001 with 50 epochs
-                # for mobilev2 without pretrain >15 down to 0.001 with 50 epochs
-                # for finetune lr=0.001, epoch >10 down to lr=0.00001
-            # if epoch > 60: #for rote change to 10 when 0.001 org is 120/160
-            #     lr = 1e-4
-            # if epoch > 100: #for rote change to 10 when 0.001
-            #     lr = 1e-5
-            # if epoch > 140: #for rote change to 10 when 0.001
-            #     lr = 1e-6
-            # if epoch > 100:
-            #     lr = 0.0001
-            # if epoch > 37:
-            #     lr = 0.0001
+
             self.adjust_learning_rate(optimizer, lr)
-            # if loss_epoch_min > loss_epoch:
-            #     loss_epoch_min = loss_epoch
-            #     _save_checkpoint(net.state_dict(), config, "model_min_avg.pth")
-            # loss_epoch = 0
-            # self.images, self.labels = self.prefetcher.next()
-            # self.step = 0
-            # while self.images is not None:
-            # for training
+
             for step, samples in enumerate(self.dataloader):
                 net.train(is_training)
                 self.images, self.labels = samples["image"], samples["label"]
@@ -163,31 +110,10 @@ class Trainer():
 
                 for _ in range(len(losses_name)):
                     losses.append([])
-                # for i in range(2):
-                # _loss_item = yolo_losses[0](outputs, self.labels)
-                # for j, l in enumerate(_loss_item):
-                #     # print(l.shape)
-                #     losses[j].append(l)
-                # for i in range(3):
-                #     _loss_item = yolo_losses[i](outputs[i], self.labels)
-                #     for j, l in enumerate(_loss_item):
-                #         # print(l.shape)
-                #         losses[j].append(l)
-                # print(output.shape())
+
                 cur_loss = loss(hm, self.labels)
                 cur_lossh = loss(outh, self.labels_h)
                 cur_loss_coor = loss_coor(coord, self.labels_coor)
-                #
-                # print(cur_loss,cur_loss_coor)
-                # score_map = output[-1].cpu() if type(output) == list else output.cpu()
-                # acc = accuracy(score_map, self.labels.cpu(), idx)
-                # acces.update(acc[0], self.images.size(0))
-                #
-                # cur_loss = loss(output, self.labels)#for pl4vp
-                #
-                # cur_loss = 0
-                # for o in output:#for heatmap
-                #     cur_loss += loss(o,self.labels)
 
                 losses[0].append(cur_loss + cur_loss_coor + cur_lossh)
                 losses = [sum(l) for l in losses]
@@ -217,26 +143,6 @@ class Trainer():
                     config["tensorboard_writer"].add_scalar("loss",
                                                             _loss,
                                                             config["global_step"])
-                    # if _loss<10:
-                    # if loss_min>_loss:
-                    #     loss_min=_loss
-                    #     self._save_checkpoint(net.state_dict(), config, "model_min.pth")
-                    # if config["train_path"]=="/home/lyb/datasets/vp/finalpoint_line_rote.txt":
-                        # for rote epoch >23, for finetune epoch > -1
-                        # if epoch > 23:
-                        #     if self.step % 50 == 0:
-                        #         self._save_checkpoint(net.state_dict(), config, "model_e%d_s%d_xy%d_l%d.pth" % (epoch, self.step, config["lambda_xy"], config["yolo"]['line_num']))
-
-                    # for i, name in enumerate(losses_name):
-                    #     value = _loss if i == 0 else losses[i]
-                    #     config["tensorboard_writer"].add_scalar(name,
-                    #                                             value,
-                    #                                             config["global_step"])
-                # self.images, self.labels = self.prefetcher.next()
-                # self.step += 1
-
-            #for rote epoch >15, for finetune epoch >-1
-            # acces.reset()
             # for val
             if epoch > 9 and epoch % 1 == 0:
                 net.eval()
@@ -266,110 +172,10 @@ class Trainer():
                             # print(detections.shape)
 
                             for x1, y1, conf in detections:
-                                # print(x1, y1)
                                 ori_h, ori_w = images[id].shape[1:3]
-                                # # print(ori_h,ori_w)
-                                # pre_h, pre_w = config["img_h"], config["img_w"]
-                                # y1 = (y1 / pre_h) * ori_h
-                                # x1 = (x1 / pre_w) * ori_w
-
                                 org_x = labels_coor[id][0][1]*config["img_h"]
                                 org_y = labels_coor[id][0][2]*config["img_h"]
 
-                #                 lock=0
-                #                 a=0.5*math.sqrt(pow((float(labels_coor[id][1][1])-float(labels_coor[id][1][3]))*ori_w,2)+pow((float(labels_coor[id][1][2])-float(labels_coor[id][1][4]))*ori_h,2))
-                #                 c2=math.sqrt(pow((float(labels_coor[id][1][3])*ori_w-x1),2)+pow((float(labels_coor[id][1][4])*ori_h-y1),2))
-                #                 c1=math.sqrt(pow((float(labels_coor[id][1][1])*ori_w-x1),2)+pow((float(labels_coor[id][1][2])*ori_h-y1),2))
-                #                 b=math.sqrt(pow(((float(labels_coor[id][1][1])+float(labels_coor[id][1][3]))*ori_w/2-x1),2)+pow(((float(labels_coor[id][1][2])+float(labels_coor[id][1][4]))*ori_h/2-y1),2))
-                #                 if c1>c2:
-                #                     c=c2
-                #                 else:
-                #                     c=c1
-                #                 s=(a+b+c)/2
-                #                 # print(a,b,c,s)
-                #                 try:
-                #                     if s<max(a,max(b,c)):
-                #                         s=max(a,max(b,c))
-                #                     h=2*math.sqrt(s*(s-a)*(s-b)*(s-c))/b
-                #                     ss=0
-                #                     for i in range(int(a)):
-                #                         ss+=pow(h*(a-i)/a,2)
-                #                     avg1=math.sqrt(ss/(2*int(a)+1))
-                #                     Drms1.append(avg1)
-                #                     lock=1
-                #                     # if avg1>=5:
-                #                     #     print(images_path[batch_size*step+idx])
-                #                 except Exception as e:
-                #                     print(e)
-                #
-                #                 a=0.5*math.sqrt(pow((float(labels_coor[id][2][1])-float(labels_coor[id][2][3]))*ori_w,2)+pow((float(labels_coor[id][2][2])-float(labels_coor[id][2][4]))*ori_h,2))
-                #                 c2=math.sqrt(pow((float(labels_coor[id][2][3])*ori_w-x1),2)+pow((float(labels_coor[id][2][4])*ori_h-y1),2))
-                #                 c1=math.sqrt(pow((float(labels_coor[id][2][1])*ori_w-x1),2)+pow((float(labels_coor[id][2][2])*ori_h-y1),2))
-                #                 b=math.sqrt(pow(((float(labels_coor[id][2][1])+float(labels_coor[id][2][3]))*ori_w/2-x1),2)+pow(((float(labels_coor[id][2][2])+float(labels_coor[id][2][4]))*ori_h/2-y1),2))
-                #                 if c1>c2:
-                #                     c=c2
-                #                 else:
-                #                     c=c1
-                #                 s=(a+b+c)/2
-                #                 # print(a,b,c,s)
-                #                 try:
-                #                     if s<max(a,max(b,c)):
-                #                         s=max(a,max(b,c))
-                #                     h=2*math.sqrt(s*(s-a)*(s-b)*(s-c))/b
-                #                     ss=0
-                #                     for i in range(int(a)):
-                #                         ss+=pow(h*(a-i)/a,2)
-                #                     avg2=math.sqrt(ss/(2*int(a)+1))
-                #                     if lock==1:
-                #                         Drms2.append(avg2)
-                #                     # lock=0
-                #                 except Exception as e:
-                #                     print(e)
-                # c1=0
-                # c2=0
-                # c3=0
-                # c4=0
-                # c5=0
-                # c6=0
-                # c7=0
-                # c9=0
-                # c8=0
-                # c10=0
-                # c10p=0
-                # for d in range(len(Drms2)):
-                #     Drms.append((Drms1[d]+Drms2[d])/2)
-                #
-                # for d in Drms:
-                #     if d<=1:
-                #         c1+=1
-                #     if d<=2:
-                #         c2+=1
-                #     if d<=3:
-                #         c3+=1
-                #     if d<=4:
-                #         c4+=1
-                #     if d<=5:
-                #         c5+=1
-                #     if d<=6:
-                #         c6+=1
-                #     if d<=7:
-                #         c7+=1
-                #     if d<=8:
-                #         c8+=1
-                #     if d<=9:
-                #         c9+=1
-                #     if d<=10:
-                #         c10+=1
-                #     c10p+=1
-                # logging.info('c1-10:%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f' % (c1/c10p,c2/c10p,c3/c10p,c4/c10p,c5/c10p,c6/c10p,c7/c10p,c8/c10p,c9/c10p,c10/c10p))
-                # logging.info("c1-c10: %d %d %d %d %d %d %d %d %d %d %d" % (c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c10p))
-                # if c1max < c1:
-                #     c1max = c1
-                #     epoch_max = epoch
-                #     epoch_th = epoch
-                #     self._save_checkpoint(net.state_dict(), config, "model_max_%d.pth" % (config["lambda_xy"]) )
-                #     print(c1,c1max)
-                                ########################for kong test############
                                 err = math.sqrt(pow(float(org_x - x1),2)+pow(float(org_y - y1),2)) / (256.*math.sqrt(2))
                                 err_list.append(err)
                 c1 = sum(i<=0.01 for i in err_list)
@@ -381,19 +187,12 @@ class Trainer():
                 print(c1,c1max)
 
                 print(cc,len(err_list))
-                # print([sum(i<=0.01 for i in err_list)/len(err_list),sum(i<=0.02 for i in err_list)/len(err_list),
-                #         sum(i<=0.03 for i in err_list)/len(err_list),sum(i<=0.04 for i in err_list)/len(err_list),
-                #         sum(i<=0.05 for i in err_list)/len(err_list),sum(i<=0.06 for i in err_list)/len(err_list),
-                #         sum(i<=0.07 for i in err_list)/len(err_list),sum(i<=0.08 for i in err_list)/len(err_list),
-                #         sum(i<=0.09 for i in err_list)/len(err_list),sum(i>0.1 for i in err_list)/len(err_list)])
 
                 if c1max < c1:
                     c1max = c1
                     epoch_max = epoch
                     epoch_th = epoch
                     self._save_checkpoint(net.state_dict(), config, "model_max_%d.pth" % (config["lambda_xy"]) )
-                    # print(c1,c1max,c10,len(err_list))
-                    # print(c1,c1max)
                     print(cc,len(err_list))
                     print([sum(i<=0.01 for i in err_list)/len(err_list),sum(i<=0.02 for i in err_list)/len(err_list),
                             sum(i<=0.03 for i in err_list)/len(err_list),sum(i<=0.04 for i in err_list)/len(err_list),
@@ -402,21 +201,7 @@ class Trainer():
                             sum(i<=0.09 for i in err_list)/len(err_list),sum(i>0.1 for i in err_list)/len(err_list)])
 
 
-
-                #
-                #
-                #
-            # if epoch > 50 and epoch % 5 == 0:#for rote change to 15 no rote to 26
-            #     # net.train(False)
-            #     self._save_checkpoint(net.state_dict(), config, "model_%d_%d_l%d.pth" % (epoch,config["lambda_xy"],config["yolo"]['line_num']))
-                    # net.train(True)
-
-            # lr_scheduler.step()
-
-        # net.train(False)
-        # self._save_checkpoint(net.state_dict(), config, "model.pth")
         self._save_checkpoint(net.state_dict(), config, "model_%d_%d_xy%d.pth" % (epoch_max,c1max,config["lambda_xy"]))
-        # net.train(True)
         logging.info("Bye~")
 
     # best_eval_result = 0.0
@@ -425,15 +210,6 @@ class Trainer():
         checkpoint_path = os.path.join(config["sub_working_dir"], savename)
         torch.save(state_dict, checkpoint_path)
         logging.info("Model checkpoint saved to %s" % checkpoint_path)
-        # eval_result = evaluate_func(config)
-        # if eval_result > best_eval_result:
-            # best_eval_result = eval_result
-            # logging.info("New best result: {}".format(best_eval_result))
-            # best_checkpoint_path = os.path.join(config["sub_working_dir"], 'model_best.pth')
-            # shutil.copyfile(checkpoint_path, best_checkpoint_path)
-            # logging.info("Best checkpoint saved to {}".format(best_checkpoint_path))
-        # else:
-            # logging.info("Best result: {}".format(best_eval_result))
 
 
     def _get_optimizer(self, config, net):

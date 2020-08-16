@@ -22,8 +22,6 @@ import torch
 import torch.nn as nn
 import torchvision.transforms as ttransforms
 
-# import torchvision.transforms as ttransforms
-
 MY_DIRNAME = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(MY_DIRNAME, '..'))
 from nets.model_main import ModelMain_PL
@@ -66,8 +64,6 @@ def test(config):
     net.train(is_training)
     # Set data parallel
     net = nn.DataParallel(net)
-    # if config["yolo"]["batchnorm"]=="SYBN":
-    #     patch_replication_callback(net)
     net = net.cuda()
     dis=0
     idx = [1]
@@ -102,50 +98,22 @@ def test(config):
             path = samples["image_path"]
             # labels_coor = labels_coor.cuda()
             with torch.no_grad():
-                # pred = net(images)
-                # pred, coord = net(images)
-
                 pred, predh, coord = net(images)
-                # print(coord.shape)
-                # for coord
                 det = loss_coor(coord)
-                # detl=get_preds(pred/255)
-                # deth=get_preds(predh/255)
-                # print(detl,deth)
-                # print(len(det))
 
                 for id, detections in enumerate(det):
                 # for id, detections in enumerate(detl):
                     _,indextensor=detections.max(0)
-                    # print(indextensor)
-                    # print(indextensor.shape)
                     detections=detections[indextensor[2]].unsqueeze(0)
-                    # print(detections.shape)
 
                     for x1, y1, conf in detections:
-                    # for x1, y1 in detections:
-                        # print(x1, y1,conf)
                         ori_h, ori_w = images[id].shape[1:3]
-                        # print(ori_h,ori_w)
-                        # print(float(labels_coor[id][1][1])*ori_w-x1)
-                        # pre_h, pre_w = config["img_h"], config["img_w"]
-                        # y1 = (y1 / pre_h) * ori_h
-                        # x1 = (x1 / pre_w) * ori_w
-
                         org_x = labels_coor[id][0][1]*config["img_h"]
                         org_y = labels_coor[id][0][2]*config["img_h"]
                         # print(x1,y1,org_x,org_y)
                         err = math.sqrt(pow(float(org_x - x1),2)+pow(float(org_y - y1),2))
-                        # if org_y<5 or org_x<3:
-                        #     print(org_x,org_y,labels_coor[id][0][1],labels_coor[id][0][2],config["img_h"],print(path[id]))
-                        # if err >10:
-                        #     print(path[id])
-                        #     print(org_x,org_y)
-                        #     print(x1,y1)
                         err = err / (256.*math.sqrt(2))
                         if err>0.1:
-                            # print(path[id])
-                            # print(org_x,org_y,labels_coor[id][0][1],labels_coor[id][0][2],config["img_h"],x1,y1)
                             img = cv2.imread(path[id],cv2.IMREAD_UNCHANGED)
                             cv2.imwrite(path[id].replace('/home/lyb/datasets/vp/val/kong','/hard/result/need'),img)
                             err=0.1
@@ -156,31 +124,6 @@ def test(config):
                         img = cv2.circle(img,(int(org_x),int(org_y)),3,(255,0,0),-1)
                         img = cv2.circle(img,(x1,y1),3,(0,0,255),-1)
                         cv2.imwrite(path[id].replace('/home/lyb/datasets/vp/val','/hard/result'),img)
-                        # pimg = tensor_to_PIL(pred/255)
-                        # pimg.save(path[id].replace('/home/lyb/datasets/vp/val/kong','/hard/result/hmp'))
-
-
-            # print(path)
-        print(len(err_list))
-        print(0.01,sum(i<=0.01 for i in err_list),sum(i<=0.01 for i in err_list)/len(err_list))
-        print(0.02,sum(i<=0.02 for i in err_list),sum(i<=0.02 for i in err_list)/len(err_list))
-        print(0.03,sum(i<=0.03 for i in err_list),sum(i<=0.03 for i in err_list)/len(err_list))
-        print(0.04,sum(i<=0.04 for i in err_list),sum(i<=0.04 for i in err_list)/len(err_list))
-        print(0.05,sum(i<=0.05 for i in err_list),sum(i<=0.05 for i in err_list)/len(err_list))
-        print(0.06,sum(i<=0.06 for i in err_list),sum(i<=0.06 for i in err_list)/len(err_list))
-        print(0.07,sum(i<=0.07 for i in err_list),sum(i<=0.07 for i in err_list)/len(err_list))
-        print(0.08,sum(i<=0.08 for i in err_list),sum(i<=0.08 for i in err_list)/len(err_list))
-        print(0.09,sum(i<=0.09 for i in err_list),sum(i<=0.09 for i in err_list)/len(err_list))
-        print(0.1,sum(i<=0.1 for i in err_list),sum(i<=0.1 for i in err_list)/len(err_list))
-        ll=sum(i>0.1 for i in err_list)
-        print(ll,ll/len(err_list))
-
-
-        print(sum(err_list)/1003)
-
-
-
-
 
 def main():
     logging.basicConfig(level=logging.DEBUG,
