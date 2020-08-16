@@ -1,0 +1,9 @@
+numpy
+torch>=1.2.0
+torchvision
+pillow
+tensorboardX
+imgaug>=0.2.5
+opencv-python
+matplotlib
+pycocotools
