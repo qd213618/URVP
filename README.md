@@ -2,12 +2,9 @@
 Full implementation of URVP in PyTorch.
 
 ## Overview
-#### Mobilenetv2+YOLOv3: An Incremental Improvement
+#### Unstructured road vanishing point (VP) detection is a challenging problem, especially in the field of autonomous driving. In this paper, we proposed a novel solution combining the convolutional neural network (CNN) and heatmap regression to detect unstructured road VP. The proposed algorithm first adopted a lightweight backbone, i.e., depthwise convolution modified HRNet, to extract hierarchical features of the unstructured road image. Then, three advanced strategies, i.e., multi-scale supervised learning, heatmap super-resolution, and coordinate regression techniques were utilized to carry out fast and high-precision unstructured road VP detection. The empirical results on Kong's dataset showed that our proposed approach had the highest detection accuracy in real-time compared with the state-of-the-art methods under various conditions, and achieved the highest speed of 33 fps.
 
 
-#### Why this project
-* Implement YOLOv3 and darknet53 without original darknet cfg parser.   
-* It is easy to custom your backbone network. Such as resnet, densenet...   
 
 ## Installation
 ##### Environment
@@ -51,8 +48,8 @@ python -m tensorboard.main --logdir=YOUR_WORKING_DIR
 ## Evaluate
 ##### Download pretrained weights
 1. See [weights readme](weights/README.md) for detail.   
-2. Download pretrained yolo3 full wegiths from [Google Drive](https://drive.google.com/file/d/1SnFAlSvsx37J7MDNs3WWLgeKY0iknikP/view?usp=sharing) or [Baidu Drive](https://pan.baidu.com/s/1YCcRLPWPNhsQfn5f8bs_0g)   
-3. Move downloaded file ```official_yolov3_weights_pytorch.pth``` to ```wegihts``` folder in this project.   
+2. Download pretrained yolo3 full wegiths from [Google Drive]() or [Baidu Drive]()   
+3. Move downloaded file ```URVP.pth``` to ```wegihts``` folder in this project.   
 ##### Start evaluate
 ```
 cd evaluate
@@ -61,7 +58,7 @@ python eval_coco.py params.py
 
 ## Quick test
 ##### pretrained weights
-Please download pretrained weights ```official_yolov3_weights_pytorch.pth``` or use yourself checkpoint.   
+Please download pretrained weights ```URVP.pth``` or use yourself checkpoint.   
 ##### Start test
 ```
 cd test
@@ -73,15 +70,14 @@ You can got result images in output folder.
 
 ## Measure FPS
 ##### pretrained weights
-Please download pretrained weights ```official_yolov3_weights_pytorch.pth``` or use yourself checkpoint.   
+Please download pretrained weights ```URVP.pth``` or use yourself checkpoint.   
 ##### Start test
 ```
 cd test
-python test_fps.py params.py
+python test.py params.py
 ```
 ##### Results
-* Test in TitanX GPU with different input size and batch size.   
-* Keep in mind this is a full test in YOLOv3. Not only backbone but also yolo layer and NMS.   
+* Test in 2080Ti GPU with different input size and batch size.   
 
 | Imp.	| Backbone | Input Size | Batch Size | Inference Time | FPS |
 | ----- |:--------:|:----------:|:----------:|:--------------:|:---:|
@@ -93,15 +89,14 @@ python test_fps.py params.py
 
 ## Credit
 ```
-@article{yolov3,
-	title={YOLOv3: An Incremental Improvement},
-	author={Redmon, Joseph and Farhadi, Ali},
-	journal = {arXiv},
-	year={2018}
+@article{liu2020unstructured,
+  title={Unstructured Road Vanishing Point Detection Using the Convolutional Neural Network and Heatmap Regression},
+  author={Liu, Yin-Bo and Zeng, Ming and Meng, Qing-Hao},
+  journal={arXiv preprint arXiv:2006.04691},
+  year={2020}
 }
 ```
 
 ## Reference
-* [darknet](https://github.com/pjreddie/darknet)
 * [PyTorch-YOLOv3](https://github.com/eriklindernoren/PyTorch-YOLOv3): Thanks for YOLO loss code
 # PL4VP
